@@ -133,7 +133,15 @@ int main()
         }
     }
     print_clusters();
-    //free(clusters);
-    //free(A);
+    //free memory
+    free(A);
+    for(int i = 0; i < K; i++) {
+        free(clusters[i].elements);
+    }
+    free(clusters);
+    for (int i = 0; i < K; i++) {
+        free(old_clusters[i].elements);
+    } 
+    free(old_clusters);
     return 0;
 }
