@@ -3,7 +3,7 @@
 #include<string.h>
 #include <math.h>
 
-#define N 1000
+#define N 100000
 #define K 4
 
 
@@ -26,6 +26,7 @@ void allocate()
 {
     A = (struct point *)malloc(N*sizeof(struct point));
     clusters = (struct cluster *)malloc(K*sizeof(struct cluster));
+    old_clusters = (struct cluster *)malloc(K*sizeof(struct cluster));
     for(int i=0;i<K;i++)
     {
         clusters[i].size = 0;
@@ -45,7 +46,7 @@ void inicializa() {
 }
 
 void cluster_points() {
-    for(int i = 0; i < N; i+=2) {
+    for(int i = 0; i < N; i++) {
         float min_dist = 1000000000.0;
         int index = 0;
         for(int j = 0; j < K; j++) {
@@ -66,7 +67,6 @@ void clear_clusters(){
     for(int i = 0; i < K; i++){
         if(clusters[i].size > 0){
             clusters[i].size = 0;
-            memset(clusters[i].elements, '\0', clusters[i].size * sizeof(struct point));
         }
     }
 }
@@ -96,52 +96,62 @@ int has_converged() {
     return 1;
 }
 
-void print_clusters() {
+void clone_cluster(){
     for(int i = 0; i < K; i++) {
-        printf("Cluster %d \n: ", i);
-        printf("Cluster center: (%f, %f) \n", clusters[i].center[0], clusters[i].center[1]);
-        printf("Cluster size %d \n", clusters[i].size);
+        old_clusters[i].elements = realloc(old_clusters[i].elements, clusters[i].size * sizeof(struct point));
+        for(int j = 0; j < clusters[i].size; j++) {
+            old_clusters[i].elements[j].x = clusters[i].elements[j].x;
+            old_clusters[i].elements[j].y = clusters[i].elements[j].y;
+        }
     }
 }
 
 
-int main()
-{
-    allocate();
-    inicializa();
-    cluster_points();
-    reevaluate_centers();
-    old_clusters = (struct cluster *)malloc(K*sizeof(struct cluster));
-    memcpy(old_clusters, clusters, K*sizeof(struct cluster));
-    for(int i=0;i<K;i++)
-    {
-        old_clusters[i].elements = (struct point *)malloc(clusters[i].size*sizeof(struct point));
-        memcpy(old_clusters[i].elements, clusters[i].elements, sizeof(struct point) * clusters[i].size);
+void print_clusters(int iter) {
+    for(int i = 0; i < K; i++) {
+        printf("Center: (%.3f, %.3f) ", clusters[i].center[0], clusters[i].center[1]);
+        printf("Size : %d \n", clusters[i].size);
     }
-    clear_clusters();
-    cluster_points();
-    reevaluate_centers();
-    while (has_converged(old_clusters) == 0) {
-        clear_clusters();
-        cluster_points();
-        reevaluate_centers();
-        memcpy(old_clusters, clusters, K*sizeof(struct cluster));
-        for(int i=0;i<K;i++)
-        {
-            old_clusters[i].elements = (struct point *)malloc(clusters[i].size*sizeof(struct point));
-            memcpy(old_clusters[i].elements, clusters[i].elements, sizeof(struct point) * clusters[i].size);
-        }
-    }
-    print_clusters();
-    //free memory
+    printf("Iterations: %d \n", iter);
+}
+
+void free_clusters(){
     free(A);
     for(int i = 0; i < K; i++) {
         free(clusters[i].elements);
     }
     free(clusters);
-    for (int i = 0; i < K; i++) {
-        free(old_clusters[i].elements);
-    } 
-    free(old_clusters);
+    //for (int i = 0; i < K; i++) {
+    //    free(old_clusters[i].elements);
+    //} 
+    //free(old_clusters);
+}
+
+
+int main()
+{
+    int iter = 0;
+    //Iniciar clusters
+    allocate();
+    inicializa();
+    cluster_points();
+    reevaluate_centers();
+    clone_cluster();
+    clear_clusters();
+    //Primeira iteração
+    cluster_points();
+    reevaluate_centers();
+    iter++;
+    //Iterar até convergir
+    while (has_converged() == 0) {
+        clone_cluster();
+        clear_clusters();
+        cluster_points();
+        reevaluate_centers();
+        iter++;
+    }
+    print_clusters(iter);
+    free_clusters();
+    
     return 0;
 }
