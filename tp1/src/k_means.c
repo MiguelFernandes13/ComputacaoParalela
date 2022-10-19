@@ -2,8 +2,9 @@
 #include<stdlib.h>
 #include<string.h>
 #include <math.h>
+#include "../include/utils.h"
 
-#define N 100000
+#define N 10000000
 #define K 4
 
 
