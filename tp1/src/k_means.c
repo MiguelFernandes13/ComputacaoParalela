@@ -81,6 +81,16 @@ void reevaluate_centers(struct cluster_point *A, struct point *center, int *size
     }
 }
 
+/**
+ * @brief Calculates the distance between two points withouth using sqrt
+ * 
+ * @param a All points
+ * @param b Cluster centers
+ * @return float Distance between two points
+ */
+float distance(struct cluster_point A, struct point center) {
+    return ((A.x - center.x) * (A.x - center.x)) + ((A.y - center.y) * (A.y - center.y));
+}
 
 /**
  * @brief Calculates new points and checks if the cluster center has changed
@@ -93,11 +103,11 @@ void reevaluate_centers(struct cluster_point *A, struct point *center, int *size
 int cluster_points(struct cluster_point *A, struct point *center, int *size) {
     int changed = 0;
     for(int i = 0; i < N; i++) {
-        float min_dist = 1000000000;
+        float min_dist = distance(A[i], center[0]);
         int min_cluster = 0;
         //calculates the distance to the center of each cluster and saves the cluster with the smallest distance
-        for(int j = 0; j < K; j++) {
-            float dist = ((A[i].x - center[j].x)*(A[i].x - center[j].x)) + ((A[i].y - center[j].y)*(A[i].y - center[j].y));
+        for(int j = 1; j < K; j++) {
+            float dist = distance(A[i], center[j]);
             if(dist < min_dist) {
                 min_dist = dist;
                 min_cluster = j;
