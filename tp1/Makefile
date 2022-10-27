@@ -3,7 +3,7 @@ BIN = bin/
 SRC = src/
 INCLUDES = include/
 EXEC = k_means
-CFLAGS = -lm -O2
+CFLAGS = -O2 -ftree-vectorize -mavx
 .DEFAULT_GOAL = k_means
 k_means: $(SRC)k_means.c $(BIN)utils.o
 	$(CC)  $(SRC)k_means.c $(CFLAGS) $(BIN)utils.o -o $(BIN)$(EXEC)
