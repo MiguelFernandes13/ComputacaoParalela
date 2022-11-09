@@ -2,11 +2,11 @@
 #include<stdlib.h>
 #include<string.h>
 #include <math.h>
+#include<omp.h>
 #include "../include/utils.h"
 
-#define N 10000000
-#define K 4
-
+int N = 10000000;
+int K = 4;
 
 /**
  * @brief Initializes cluster_point struct and initializes with a random value for its center
@@ -18,9 +18,7 @@
  * @param cluster_size Size of the cluster
 */
 void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, int *cluster_size) {
-    //struct cluster_point *A = (struct cluster_point *)malloc(N*sizeof(struct cluster_point));
     srand(10);
-    #pragma omp parallel for simd
     for(int i = 0; i < N; i++) {        //assigns random values to the coordinates
         pointX[i] = (float)rand()/ RAND_MAX;
         pointY[i] = (float)rand()/ RAND_MAX;
@@ -51,7 +49,7 @@ void reevaluate_centers(int *cluster, float *pointX, float *pointY, float *cente
         cluster_size[i] = 0;
     }
     // sum the coordinates of each cluster
-    #pragma omp parallel for simd reduction(+:sum_x[:K], sum_y[:K], cluster_size[:K])
+    #pragma omp parallel for reduction(+:sum_x[:K], sum_y[:K], cluster_size[:K])
     for(int i = 0; i < N; i++){
         sum_x[cluster[i]] += pointX[i];
         sum_y[cluster[i]] += pointY[i];
@@ -89,9 +87,9 @@ float distance(float pointX, float pointY, float centerX, float centerY) {
  * @param cluster_size Size of the cluster
  * @return int  1 if the cluster center has changed, 0 otherwise
  */
-int cluster_points(int *cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *size) {
+int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *size) {
     int changed = 0;
-    #pragma omp parallel for simd reduction(+:changed)
+    #pragma omp parallel for reduction(+:changed)
     for(int i = 0; i < N; i++) {
         //calculates the distance to the center of each cluster and saves the cluster with the smallest distance
         float min_dist = distance(pointX[i], pointY[i], centerX[0], centerY[0]);
@@ -148,7 +146,9 @@ void k_means() {
     // start iteration counter
     int iter = 0;
     
-    while(cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {
+    //while(cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {
+    while (iter < 20){
+        cluster_points(cluster, pointsX, pointsY, centerX, centerY, size);    
         iter++;
     }
     
@@ -165,7 +165,20 @@ void k_means() {
  * 
  * @return int Returns 0 if the program runs successfully
  */
-int main(){
+int main(int argc, char *argv[]) {
+    if (argc == 3 || argc == 4) {
+        N = atoi(argv[1]);
+        K = atoi(argv[2]);
+        if (argc == 4) {
+            omp_set_num_threads(atoi(argv[3]));
+        }
+        else{
+            omp_set_num_threads(1);
+        }
+    }else{
+        printf("Usage: %s <Number of points> <Number of clusters> <Number of threads>\n", argv[0]);
+        exit(1);
+    }
     k_means();
     return 0;
 }
