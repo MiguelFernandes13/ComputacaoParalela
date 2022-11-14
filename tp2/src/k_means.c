@@ -40,29 +40,44 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
  * @param centerY Y coordinate of the center
  * @param cluster_size Size of the cluster
  */
-void reevaluate_centers(int *cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *cluster_size) {
-    // initialize variables to 0
-    float sum_x[K], sum_y[K];
-    for(int i = 0; i < K; i++){
-        sum_x[i] = 0;
-        sum_y[i] = 0;
-        cluster_size[i] = 0;
-    }
-    // sum the coordinates of each cluster
-    #pragma omp parallel for reduction(+:sum_x[:K], sum_y[:K], cluster_size[:K])
-    for(int i = 0; i < N; i++){
-        sum_x[cluster[i]] += pointX[i];
-        sum_y[cluster[i]] += pointY[i];
-        cluster_size[cluster[i]]++;
-    }
+//void reevaluate_centers(int *cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *cluster_size) {
+//    // initialize variables to 0
+//    float sum_x[K], sum_y[K];
+//    for(int i = 0; i < K; i++){
+//        sum_x[i] = 0;
+//        sum_y[i] = 0;
+//        cluster_size[i] = 0;
+//    }
+//    // sum the coordinates of each cluster
+//    #pragma omp parallel for reduction(+:sum_x[:K], sum_y[:K], cluster_size[:K])
+//    for(int i = 0; i < N; i++){
+//        sum_x[cluster[i]] += pointX[i];
+//        sum_y[cluster[i]] += pointY[i];
+//        cluster_size[cluster[i]]++;
+//    }
+//
+//    // calculate the center of each cluster with the mean of all the points in the cluster
+//    for(int i = 0; i < K; i++){
+//        centerX[i] = sum_x[i] / cluster_size[i];
+//        centerY[i] = sum_y[i] / cluster_size[i];
+//    }
+//}
 
-    // calculate the center of each cluster with the mean of all the points in the cluster
+void reevaluate_centers(float *centerX, float *centerY, int *cluster_size, float *sumX, float *sumY) {
+    #pragma omp simd
     for(int i = 0; i < K; i++){
-        centerX[i] = sum_x[i] / cluster_size[i];
-        centerY[i] = sum_y[i] / cluster_size[i];
+        centerX[i] = sumX[i] / cluster_size[i];
+        centerY[i] = sumY[i] / cluster_size[i];
     }
 }
 
+void initialize_centers(float *centerX, float *centerY, int* size){
+    for(int i = 0; i < K; i++) {    // assigns the first K points as the initial centers
+        centerX[i] = 0;
+        centerY[i] = 0;
+        size[i] = 0;
+    }
+}
 /**
  * @brief Calculates the distance between two points withouth using sqrt
  * 
@@ -89,7 +104,9 @@ float distance(float pointX, float pointY, float centerX, float centerY) {
  */
 int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *size) {
     int changed = 0;
-    #pragma omp parallel for reduction(+:changed)
+    float sum_x[K], sum_y[K];
+    initialize_centers(sum_x, sum_y, size);
+    #pragma omp parallel for reduction(+:sum_x[:K], sum_y[:K], size[:K], changed)
     for(int i = 0; i < N; i++) {
         //calculates the distance to the center of each cluster and saves the cluster with the smallest distance
         float min_dist = distance(pointX[i], pointY[i], centerX[0], centerY[0]);
@@ -106,9 +123,12 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
             changed = 1;
             cluster[i] = min_cluster;
         }
+        sum_x[min_cluster] += pointX[i];
+        sum_y[min_cluster] += pointY[i];
+        size[min_cluster]++;
     }
     //reevaluate the centers
-    reevaluate_centers(cluster, pointX, pointY, centerX, centerY, size);
+    reevaluate_centers(centerX, centerY, size, sum_x, sum_y);
     return changed;
 }
 
