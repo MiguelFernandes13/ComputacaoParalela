@@ -1,17 +1,19 @@
 #!/bin/bash
 
-
-#SBATCH --output=tp2Output.txt
-
-
-echo "Loading gcc 7.2.0..."
-module load gcc/7.2.0
-
 echo "Compiling..."
 make
 echo "Makefile OK!"
 
-echo "running with CP_CLUSTERS=10"
-make runseq CP_CLUSTERS=10
+n=4
+
+while [ $n -le 37 ]
+do
+	echo "running with $n THREADS"
+    export OMP_NUM_THREADS=$n
+	srun --partition=cpar perf stat -e instructions,cycles make runpar CP_CLUSTERS=32 THREADS=$n
+
+	sleep 5
+	n=$((n+4))
+done
 
 echo "Script ran flawlessly!"

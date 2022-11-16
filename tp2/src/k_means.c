@@ -64,7 +64,6 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
 //}
 
 void reevaluate_centers(float *centerX, float *centerY, int *cluster_size, float *sumX, float *sumY) {
-    #pragma omp simd
     for(int i = 0; i < K; i++){
         centerX[i] = sumX[i] / cluster_size[i];
         centerY[i] = sumY[i] / cluster_size[i];
@@ -123,9 +122,12 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
             changed = 1;
             cluster[i] = min_cluster;
         }
+
         sum_x[min_cluster] += pointX[i];
         sum_y[min_cluster] += pointY[i];
         size[min_cluster]++;
+        
+        
     }
     //reevaluate the centers
     reevaluate_centers(centerX, centerY, size, sum_x, sum_y);
@@ -167,8 +169,7 @@ void k_means() {
     int iter = 0;
     
     //while(cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {
-    while (iter < 20){
-        cluster_points(cluster, pointsX, pointsY, centerX, centerY, size);    
+    while (iter < 20 && cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {  
         iter++;
     }
     
@@ -193,7 +194,7 @@ int main(int argc, char *argv[]) {
             omp_set_num_threads(atoi(argv[3]));
         }
         else{
-            omp_set_num_threads(1);
+            omp_set_num_threads(0);
         }
     }else{
         printf("Usage: %s <Number of points> <Number of clusters> <Number of threads>\n", argv[0]);
