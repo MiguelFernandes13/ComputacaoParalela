@@ -4,9 +4,10 @@ echo "Compiling..."
 make
 echo "Makefile OK!"
 
+srun --partition=cpar perf stat -e instructions,cycles make runseq CP_CLUSTERS=32
 n=4
 
-while [ $n -le 37 ]
+while [ $n -le 57 ]
 do
 	echo "running with $n THREADS"
     export OMP_NUM_THREADS=$n
