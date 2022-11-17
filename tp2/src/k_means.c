@@ -34,35 +34,12 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
 /**
  * @brief Reevaluate centroides. Calculates the mean of each cluster and assigns that value to the cluster center
  * 
- * @param pointX X coordinate of the point
- * @param pointY Y coordinate of the point
  * @param centerX X coordinate of the center
  * @param centerY Y coordinate of the center
  * @param cluster_size Size of the cluster
+ * @param sum_x Sum of the X coordinates of the points in the cluster
+ * @param sum_y Sum of the Y coordinates of the points in the cluster
  */
-//void reevaluate_centers(int *cluster, float *pointX, float *pointY, float *centerX, float *centerY, int *cluster_size) {
-//    // initialize variables to 0
-//    float sum_x[K], sum_y[K];
-//    for(int i = 0; i < K; i++){
-//        sum_x[i] = 0;
-//        sum_y[i] = 0;
-//        cluster_size[i] = 0;
-//    }
-//    // sum the coordinates of each cluster
-//    #pragma omp parallel for reduction(+:sum_x[:K], sum_y[:K], cluster_size[:K])
-//    for(int i = 0; i < N; i++){
-//        sum_x[cluster[i]] += pointX[i];
-//        sum_y[cluster[i]] += pointY[i];
-//        cluster_size[cluster[i]]++;
-//    }
-//
-//    // calculate the center of each cluster with the mean of all the points in the cluster
-//    for(int i = 0; i < K; i++){
-//        centerX[i] = sum_x[i] / cluster_size[i];
-//        centerY[i] = sum_y[i] / cluster_size[i];
-//    }
-//}
-
 void reevaluate_centers(float *centerX, float *centerY, int *cluster_size, float *sumX, float *sumY) {
     for(int i = 0; i < K; i++){
         centerX[i] = sumX[i] / cluster_size[i];
@@ -70,8 +47,14 @@ void reevaluate_centers(float *centerX, float *centerY, int *cluster_size, float
     }
 }
 
+/**
+ * @brief Initializes the centers and the size of the clusters to 0
+ * @param centerX array of the X coordinates of the centers
+ * @param centerY array of the Y coordinates of the centers
+ * @param cluster_size array of the size of the clusters
+*/
 void initialize_centers(float *centerX, float *centerY, int* size){
-    for(int i = 0; i < K; i++) {    // assigns the first K points as the initial centers
+    for(int i = 0; i < K; i++) {  
         centerX[i] = 0;
         centerY[i] = 0;
         size[i] = 0;
@@ -119,15 +102,13 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
         }
         //Verify if the cluster has changed and if so, change the cluster and the changed variable
         if(cluster[i] != min_cluster) {
-            changed = 1;
+            changed += 1;
             cluster[i] = min_cluster;
         }
-
+        //sum the coordinates of the points in each cluster
         sum_x[min_cluster] += pointX[i];
         sum_y[min_cluster] += pointY[i];
         size[min_cluster]++;
-        
-        
     }
     //reevaluate the centers
     reevaluate_centers(centerX, centerY, size, sum_x, sum_y);
@@ -169,7 +150,7 @@ void k_means() {
     int iter = 0;
     
     //while(cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {
-    while (iter < 20 && cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {  
+    while (iter < 20 && cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) > 0) {
         iter++;
     }
     

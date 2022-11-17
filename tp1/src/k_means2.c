@@ -2,7 +2,6 @@
 #include<stdlib.h>
 #include<string.h>
 #include <math.h>
-#include<omp.h>
 #include "../include/utils.h"
 
 int N = 10000000;
