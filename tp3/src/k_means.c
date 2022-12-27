@@ -8,6 +8,7 @@
 
 int N = 10000000;
 int K = 4;
+int New_N = 0;
 
 /**
  * @brief Initializes cluster_point struct and initializes with a random value for its center
@@ -20,8 +21,8 @@ int K = 4;
 */
 void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, int *cluster_size, int nprocesses, int rank){
     srand(10);
-    int size = N/nprocesses;
-    for(int i = 0; i < size; i++) {        //assigns random values to the coordinates
+
+    for(int i = 0; i < New_N; i++) {        //assigns random values to the coordinates
         pointX[i] = (float)rand()/ RAND_MAX;
         pointY[i] = (float)rand()/ RAND_MAX;
     }
@@ -96,8 +97,7 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
     int changed = 0;
     float sum_x[K], sum_y[K];
     initialize_centers(sum_x, sum_y, size);
-    int new_N = N/nprocesses;
-    for(int i = 0; i < new_N; i++){
+    for(int i = 0; i < New_N; i++){
         //calculates the distance to the center of each cluster and saves the cluster with the smallest distance
         int min_cluster = 0;
         float min_dist = distance(pointX[i], pointY[i], centerX[0], centerY[0]);
@@ -166,8 +166,12 @@ void k_means(int nprocesses, int rank) {
     //Initialize variables
     int size[K];
     float centerX[K], centerY[K];
-    float *pointsX = (float *)malloc((N / nprocesses) * sizeof(float));
-    float *pointsY = (float *)malloc((N / nprocesses) * sizeof(float));
+    New_N = N / nprocesses;
+    if (rank == nprocesses - 1) {
+        New_N += N % nprocesses;
+    }
+    float *pointsX = (float *)malloc(New_N * sizeof(float));
+    float *pointsY = (float *)malloc(New_N * sizeof(float));
     int *cluster = (int *)malloc((N / nprocesses) * sizeof(int));
     inicializa(pointsX, pointsY, centerX, centerY, size, nprocesses, rank);
 
