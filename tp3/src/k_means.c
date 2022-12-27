@@ -31,23 +31,11 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
             centerY[i] = pointY[i];
             cluster_size[i] = 0;
         }
-        for(int i = 1; i < nprocesses; i++){
-            MPI_Send(&centerX, K, MPI_FLOAT, i, 0, MPI_COMM_WORLD);
-            MPI_Send(&centerY, K, MPI_FLOAT, i, 1, MPI_COMM_WORLD);
-            MPI_Send(&cluster_size, K, MPI_INT, i, 2, MPI_COMM_WORLD);
-        }
-    } else{
-        float auxCenterX[K], auxCenterY[K];
-        int auxClusterSize[K];
-        MPI_Recv(&auxCenterX, K, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&auxCenterY, K, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&auxClusterSize, K, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        for(int i = 0; i < K; i++){
-            centerX[i] = auxCenterX[i];
-            centerY[i] = auxCenterY[i];
-            cluster_size[i] = auxClusterSize[i];
-        }
     }
+    //assigns the rest of the points to a random cluster
+    MPI_Bcast(&(*centerX), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(*centerY), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(*cluster_size), K, MPI_INT, 0, MPI_COMM_WORLD);
 }
 
 
@@ -129,46 +117,26 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
         sum_y[min_cluster] += pointY[i];
         size[min_cluster]++;
     }
-    if (rank != 0){
-        for(int i = 0; i < K; i++){
-            MPI_Send(&sum_x[i], 1, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
-            MPI_Send(&sum_y[i], 1, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
-            MPI_Send(&size[i], 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
-            MPI_Send(&changed, 1, MPI_INT, 0, 3, MPI_COMM_WORLD);
-        }
-        float aux_centerX[K], aux_centerY[K];
-        int aux_changed;
-        MPI_Recv(&aux_centerX, K, MPI_FLOAT, 0, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&aux_centerY, K, MPI_FLOAT, 0, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&aux_changed, 1, MPI_INT, 0, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        for(int i = 0; i < K; i++){
-            centerX[i] = aux_centerX[i];
-            centerY[i] = aux_centerY[i];
-        }
-        changed = aux_changed;
-    } else {
-        for(int i = 1; i < nprocesses; i++){
-            float aux_sum_x[K], aux_sum_y[K];
-            int aux_size[K], aux_changed;   
-            for(int j = 0; j < K; j++){
-                MPI_Recv(&aux_sum_x[j], 1, MPI_FLOAT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Recv(&aux_sum_y[j], 1, MPI_FLOAT, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Recv(&aux_size[j], 1, MPI_INT, i, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                MPI_Recv(&aux_changed, 1, MPI_INT, i, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                sum_x[j] += aux_sum_x[j];
-                sum_y[j] += aux_sum_y[j];
-                size[j] += aux_size[j];
-                changed += aux_changed;
 
-            }
+    float aux_sum_x[K], aux_sum_y[K];
+    int aux_changed = 0, aux_size[K];
+
+    MPI_Reduce(&changed, &aux_changed, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&sum_x, &aux_sum_x, K, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&sum_y, &aux_sum_y, K, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&(*size), &aux_size, K, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    
+
+    if (rank == 0){
+        for(int i = 0; i < K; i++) {
+            size[i] = aux_size[i];
         }
-        reevaluate_centers(centerX, centerY, size, sum_x, sum_y);
-        for(int i = 1; i < nprocesses; i++){
-            MPI_Send(centerX, K, MPI_FLOAT, i, 4, MPI_COMM_WORLD);
-            MPI_Send(centerY, K, MPI_FLOAT, i, 5, MPI_COMM_WORLD);
-            MPI_Send(&changed, 1, MPI_INT, i, 6, MPI_COMM_WORLD);
-        }
+        reevaluate_centers(centerX, centerY, size, aux_sum_x, aux_sum_y);
     }
+    MPI_Bcast(&(*centerX), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&(*centerY), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
     return changed;
 }
 
