@@ -178,7 +178,6 @@ void k_means(int nprocesses, int rank) {
     while (iter < 20 && cluster_points(cluster, pointsX, pointsY, centerX, centerY, size, nprocesses, rank) > 0) {
         iter++;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) {
         print_clusters(iter, centerX, centerY, size);
     }
