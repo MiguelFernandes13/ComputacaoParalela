@@ -37,9 +37,16 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
             MPI_Send(&cluster_size, K, MPI_INT, i, 2, MPI_COMM_WORLD);
         }
     } else{
-        MPI_Recv(&centerX, K, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&centerY, K, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Recv(&cluster_size, K, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        float auxCenterX[K], auxCenterY[K];
+        int auxClusterSize[K];
+        MPI_Recv(&auxCenterX, K, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&auxCenterY, K, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&auxClusterSize, K, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        for(int i = 0; i < K; i++){
+            centerX[i] = auxCenterX[i];
+            centerY[i] = auxCenterY[i];
+            cluster_size[i] = auxClusterSize[i];
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 #!/bin/bash
-#SBATCH --ntasks=4
+#SBATCH --output=mpi.out
+#SBATCH --ntasks=40
 #SBATCH --partition=cpar
-time mpirun -np 4 bin/k_means 10000000 4
+time mpirun -np 40 bin/k_means 10000000 32
