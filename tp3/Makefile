@@ -15,6 +15,6 @@ $(BIN)utils.o: $(SRC)utils.c $(INCLUDES)utils.h
 clean:
 	rm -r bin/*
 runseq:
-	./$(BIN)$(EXEC) 10000000 $(CP_CLUSTERS)
+	mpirun -np 1 ./$(BIN)$(EXEC) 10000000 $(CP_CLUSTERS)
 runpar:
-	./$(BIN)$(EXEC) 10000000 $(CP_CLUSTERS) $(THREADS)
+	mpirun -np $(TASKS) ./$(BIN)$(EXEC) 10000000 $(CP_CLUSTERS)
