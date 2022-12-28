@@ -33,7 +33,7 @@ void inicializa(float *pointX, float *pointY, float *centerX, float *centerY, in
             cluster_size[i] = 0;
         }
     }
-    //assigns the rest of the points to a random cluster
+    //broadcast the values of the centers and the size of the clusters
     MPI_Bcast(&(*centerX), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(*centerY), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(*cluster_size), K, MPI_INT, 0, MPI_COMM_WORLD);
@@ -121,6 +121,7 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
     float aux_sum_x[K], aux_sum_y[K];
     int aux_changed = 0, aux_size[K];
 
+    //sum the values of the variables changed and sum_x and sum_y and the size of the clusters
     MPI_Reduce(&changed, &aux_changed, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&sum_x, &aux_sum_x, K, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
     MPI_Reduce(&sum_y, &aux_sum_y, K, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -133,6 +134,7 @@ int cluster_points(int* cluster, float *pointX, float *pointY, float *centerX, f
         }
         reevaluate_centers(centerX, centerY, size, aux_sum_x, aux_sum_y);
     }
+    //broadcast the new values of the centers and the changed variable
     MPI_Bcast(&(*centerX), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&(*centerY), K, MPI_FLOAT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&changed, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -178,7 +180,6 @@ void k_means(int nprocesses, int rank) {
     // start iteration counter
     int iter = 0;
     
-    //while(cluster_points(cluster, pointsX, pointsY, centerX, centerY, size) == 1) {
     while (iter < 20 && cluster_points(cluster, pointsX, pointsY, centerX, centerY, size, nprocesses, rank) > 0) {
         iter++;
     }
